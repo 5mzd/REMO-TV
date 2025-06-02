@@ -1,0 +1,3 @@
+#EXTM3U
+#EXT-X-STREAM-INF:BANDWIDTH=4500000,RESOLUTION=650x720
+https://cma.footballii.ir/hls2/b1.m3u8
