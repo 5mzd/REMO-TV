@@ -1,0 +1,2 @@
+[build]
+  functions = "functions"  # يشير إلى مجلد الوظائف
