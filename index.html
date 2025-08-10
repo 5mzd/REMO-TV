@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>استخراج HLS من يوتيوب</title>
+  <style>
+    body { font-family: Arial; text-align: center; padding: 20px; }
+    input { width: 80%; padding: 10px; margin: 10px 0; }
+    button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>استخراج رابط HLS من يوتيوب</h1>
+  <input type="text" id="youtubeUrl" placeholder="أدخل رابط بث يوتيوب">
+  <button onclick="getHLS()">استخراج</button>
+  <div id="result"></div>
+
+  <script>
+    async function getHLS() {
+      const url = document.getElementById("youtubeUrl").value;
+      const response = await fetch(`/.netlify/functions/get-hls?url=${encodeURIComponent(url)}`);
+      const data = await response.json();
+      document.getElementById("result").innerHTML = data.hlsUrl 
+        ? `<a href="${data.hlsUrl}" target="_blank">${data.hlsUrl}</a>` 
+        : data.error;
+    }
+  </script>
+</body>
+</html>
