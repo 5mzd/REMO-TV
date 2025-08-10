@@ -1,2 +1,6 @@
 [build]
-  functions = "functions"  # يشير إلى مجلد الوظائف
+  functions = "netlify/functions"
+  command = "npm install"
+
+[dev]
+  functions = "netlify/functions"
