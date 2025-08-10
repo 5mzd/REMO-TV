@@ -1,59 +1,46 @@
-const chromium = require('@sparticuz/chromium');
-const puppeteer = require('puppeteer-core');
+const ytdlp = require('yt-dlp-exec');
 
-exports.handler = async (event) => {
-  const youtubeUrl = event.queryStringParameters?.url;
-
-  if (!youtubeUrl) {
+exports.handler = async function(event, context) {
+  const url = event.queryStringParameters?.url;
+  if (!url) {
     return {
       statusCode: 400,
-      body: JSON.stringify({ error: "يجب تقديم رابط URL" })
+      body: JSON.stringify({ error: 'Missing url parameter' }),
     };
   }
 
-  let browser;
   try {
-    browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath,
-      headless: chromium.headless,
+    const info = await ytdlp(url, {
+      dumpSingleJson: true,
+      noWarnings: true,
+      noCheckCertificate: true,
+      noPlaylist: true,
     });
 
-    const page = await browser.newPage();
-    await page.goto(youtubeUrl, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    if (!info.formats) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ error: 'No formats found' }),
+      };
+    }
 
-    const hlsUrl = await page.evaluate(() => {
-      const scripts = Array.from(document.querySelectorAll('script'));
-      for (const script of scripts) {
-        const match = script.textContent?.match(/"hlsManifestUrl":"([^"]+\.m3u8[^"]*)"/);
-        if (match) return match[1].replace(/\\u0026/g, '&');
-      }
-
-      if (window.ytInitialPlayerResponse?.streamingData?.hlsManifestUrl) {
-        return window.ytInitialPlayerResponse.streamingData.hlsManifestUrl;
-      }
-
-      return null;
-    });
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        hlsUrl: hlsUrl || "لم يتم العثور على رابط HLS"
-      })
-    };
+    const hlsFormat = info.formats.find(f => f.protocol === 'm3u8_native');
+    if (hlsFormat) {
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ hls_url: hlsFormat.url }),
+      };
+    } else {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ error: 'No HLS m3u8 URL found' }),
+      };
+    }
 
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({
-        error: "فشل في استخراج رابط HLS",
-        details: error.message
-      })
+      body: JSON.stringify({ error: 'Failed to extract stream info', details: error.message }),
     };
-  } finally {
-    if (browser) await browser.close();
   }
 };
